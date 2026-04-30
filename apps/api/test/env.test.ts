@@ -7,36 +7,26 @@ describe("parseEnv", () => {
     const env = parseEnv({
       PORT: "3001",
       NODE_ENV: "development",
-      NTA_API_KEY: "key",
-      NTA_API_HEADER_NAME: "Ocp-Apim-Subscription-Key",
-      UPSTREAM_VEHICLES_URL_DEV: "https://api.wwwmarcos-alvarez.com/vehicles",
-      UPSTREAM_VEHICLES_URL_PROD: "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json",
-      GTFS_STATIC_URL: "https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip",
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/galway_bus",
       CORS_ORIGIN: "http://localhost:5173",
       CACHE_TTL_MS: "10000"
     });
 
     expect(env.PORT).toBe(3001);
     expect(env.CACHE_TTL_MS).toBe(10000);
-    expect(env.UPSTREAM_VEHICLES_URL).toBe("https://api.wwwmarcos-alvarez.com/vehicles");
+    expect(env.DATABASE_URL).toBe("postgresql://user:pass@localhost:5432/galway_bus");
   });
 
-  it("uses the production upstream in production", () => {
+  it("parses the database URL in production", () => {
     const env = parseEnv({
       PORT: "3001",
       NODE_ENV: "production",
-      NTA_API_KEY: "key",
-      NTA_API_HEADER_NAME: "Ocp-Apim-Subscription-Key",
-      UPSTREAM_VEHICLES_URL_DEV: "https://api.wwwmarcos-alvarez.com/vehicles",
-      UPSTREAM_VEHICLES_URL_PROD: "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json",
-      GTFS_STATIC_URL: "https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip",
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/galway_bus",
       CORS_ORIGIN: "http://localhost:5173",
       CACHE_TTL_MS: "10000"
     });
 
-    expect(env.UPSTREAM_VEHICLES_URL).toBe(
-      "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json"
-    );
+    expect(env.DATABASE_URL).toBe("postgresql://user:pass@localhost:5432/galway_bus");
   });
 
   it("throws when a required value is missing", () => {

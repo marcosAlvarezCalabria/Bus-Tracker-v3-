@@ -7,7 +7,6 @@ import type { AppEnv } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { healthRouter } from "./routes/health.route.js";
 import { createPublicRouter } from "./routes/public.route.js";
-import { GtfsStaticService } from "./services/gtfs-static.service.js";
 import { VehicleFeedService } from "./services/vehicle-feed.service.js";
 
 type AppDependencies = {
@@ -16,9 +15,7 @@ type AppDependencies = {
 
 export const createApp = (env: AppEnv, dependencies: AppDependencies = {}) => {
   const app = express();
-  const vehicleFeedService =
-    dependencies.vehicleFeedService ??
-    new VehicleFeedService(env, new GtfsStaticService(env));
+  const vehicleFeedService = dependencies.vehicleFeedService ?? new VehicleFeedService(env);
 
   app.disable("x-powered-by");
   app.use(helmet());

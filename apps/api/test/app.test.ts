@@ -3,23 +3,19 @@ import { describe, expect, it } from "vitest";
 
 import { createApp } from "../src/app.js";
 import type { AppEnv } from "../src/config/env.js";
+import type { Vehicle } from "@bus-tracker/shared";
 import type { VehicleFeedService } from "../src/services/vehicle-feed.service.js";
 
 const env: AppEnv = {
   PORT: 3001,
   NODE_ENV: "test",
-  NTA_API_KEY: "test-key",
-  NTA_API_HEADER_NAME: "Ocp-Apim-Subscription-Key",
-  UPSTREAM_VEHICLES_URL_DEV: "https://api.wwwmarcos-alvarez.com/vehicles",
-  UPSTREAM_VEHICLES_URL_PROD: "https://api.nationaltransport.ie/gtfsr/v2/Vehicles?format=json",
-  UPSTREAM_VEHICLES_URL: "https://api.wwwmarcos-alvarez.com/vehicles",
-  GTFS_STATIC_URL: "https://www.transportforireland.ie/transitData/Data/GTFS_Realtime.zip",
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/galway_bus",
   CORS_ORIGIN: "http://localhost:5173",
   CACHE_TTL_MS: 10_000
 };
 
 const vehicleFeedServiceStub = {
-  async getVehicles(route?: string) {
+  async getVehicles(route?: string): Promise<Vehicle[]> {
     if (route === "401") {
       return [
         {
