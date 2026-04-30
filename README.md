@@ -15,3 +15,4 @@ Monorepo scaffold with:
 
 The API refuses to start if any required environment variable is missing or invalid.
 
+Remote repository name: `Bus-Tracker-v3-`.
