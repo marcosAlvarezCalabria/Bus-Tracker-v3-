@@ -10,6 +10,13 @@ type VehiclesCache = {
   vehicles: Vehicle[];
 };
 
+const GALWAY_BOUNDS = {
+  minLat: 53.1,
+  maxLat: 53.5,
+  minLng: -9.4,
+  maxLng: -8.7
+} as const;
+
 type UpstreamEntity = {
   id?: string;
   vehicle?: {
@@ -52,15 +59,16 @@ export class VehicleFeedService {
     this.gtfsStaticService = gtfsStaticService;
   }
 
-  public async getVehicles(): Promise<Vehicle[]> {
+  public async getVehicles(route?: string): Promise<Vehicle[]> {
     const now = Date.now();
     const upstreamUrl = this.getUpstreamVehiclesUrl();
+    const normalizedRoute = route?.trim().toLowerCase() || null;
 
     if (
       this.vehiclesCache !== null &&
       now - this.vehiclesCache.cachedAt < this.env.CACHE_TTL_MS
     ) {
-      return this.vehiclesCache.vehicles;
+      return this.filterVehicles(this.vehiclesCache.vehicles, normalizedRoute);
     }
 
     const response = await fetch(upstreamUrl, {
@@ -89,7 +97,7 @@ export class VehicleFeedService {
       vehicles
     };
 
-    return vehicles;
+    return this.filterVehicles(vehicles, normalizedRoute);
   }
 
   private getUpstreamVehiclesUrl(): string {
@@ -115,6 +123,39 @@ export class VehicleFeedService {
       payload
         .map((vehicle) => this.mapNormalizedVehicle(vehicle))
         .filter((vehicle): vehicle is Vehicle => vehicle !== null)
+    );
+  }
+
+  private filterVehicles(vehicles: Vehicle[], route: string | null): Vehicle[] {
+    return vehicles.filter((vehicle) => {
+      const routeShortName = vehicle.routeShortName.trim();
+
+      if (routeShortName.length === 0) {
+        return false;
+      }
+
+      if (!this.isInGalwayBounds(vehicle)) {
+        return false;
+      }
+
+      if (route !== null && routeShortName.toLowerCase() !== route) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  private isInGalwayBounds(vehicle: Vehicle): boolean {
+    if (vehicle.lat === null || vehicle.lng === null) {
+      return false;
+    }
+
+    return (
+      vehicle.lat >= GALWAY_BOUNDS.minLat &&
+      vehicle.lat <= GALWAY_BOUNDS.maxLat &&
+      vehicle.lng >= GALWAY_BOUNDS.minLng &&
+      vehicle.lng <= GALWAY_BOUNDS.maxLng
     );
   }
 

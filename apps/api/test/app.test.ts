@@ -19,7 +19,20 @@ const env: AppEnv = {
 };
 
 const vehicleFeedServiceStub = {
-  async getVehicles() {
+  async getVehicles(route?: string) {
+    if (route === "401") {
+      return [
+        {
+          id: "vehicle-1",
+          routeShortName: "401",
+          stopId: "8460B001",
+          lat: 53.274,
+          lng: -9.049,
+          delaySeconds: null
+        }
+      ];
+    }
+
     return [
       {
         id: "vehicle-1",
@@ -49,6 +62,24 @@ describe("createApp", () => {
     const app = createApp(env, { vehicleFeedService: vehicleFeedServiceStub });
 
     const response = await request(app).get("/vehicles");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        id: "vehicle-1",
+        routeShortName: "401",
+        stopId: "8460B001",
+        lat: 53.274,
+        lng: -9.049,
+        delaySeconds: null
+      }
+    ]);
+  });
+
+  it("passes the route filter through to the vehicle service", async () => {
+    const app = createApp(env, { vehicleFeedService: vehicleFeedServiceStub });
+
+    const response = await request(app).get("/vehicles?route=401");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([
