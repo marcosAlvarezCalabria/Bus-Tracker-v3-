@@ -3,13 +3,15 @@ import { describe, expect, it } from "vitest";
 
 import { createApp } from "../src/app.js";
 import type { AppEnv } from "../src/config/env.js";
-import type { Vehicle } from "@bus-tracker/shared";
+import type { Arrival, Vehicle } from "@bus-tracker/shared";
+import type { ArrivalsService } from "../src/services/arrivals.service.js";
 import type { VehicleFeedService } from "../src/services/vehicle-feed.service.js";
 
 const env: AppEnv = {
   PORT: 3001,
   NODE_ENV: "test",
   DATABASE_URL: "postgresql://user:pass@localhost:5432/galway_bus",
+  ARRIVALS_UPSTREAM_URL: "https://api.wwwmarcos-alvarez.com",
   CORS_ORIGIN: "http://localhost:5173",
   CACHE_TTL_MS: 10_000
 };
@@ -42,9 +44,29 @@ const vehicleFeedServiceStub = {
   }
 } as VehicleFeedService;
 
+const arrivalsServiceStub = {
+  async getArrivals(stopId: string): Promise<Arrival[]> {
+    if (stopId === "8460B001") {
+      return [
+        {
+          routeShortName: "401",
+          headsign: "Eyre Square",
+          scheduledArrival: "18:36:30",
+          delaySeconds: 120
+        }
+      ];
+    }
+
+    return [];
+  }
+} as ArrivalsService;
+
 describe("createApp", () => {
   it("returns the health payload with a timestamp", async () => {
-    const app = createApp(env, { vehicleFeedService: vehicleFeedServiceStub });
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
 
     const response = await request(app).get("/health");
 
@@ -55,7 +77,10 @@ describe("createApp", () => {
   });
 
   it("returns vehicles at the root endpoint", async () => {
-    const app = createApp(env, { vehicleFeedService: vehicleFeedServiceStub });
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
 
     const response = await request(app).get("/vehicles");
 
@@ -73,7 +98,10 @@ describe("createApp", () => {
   });
 
   it("passes the route filter through to the vehicle service", async () => {
-    const app = createApp(env, { vehicleFeedService: vehicleFeedServiceStub });
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
 
     const response = await request(app).get("/vehicles?route=401");
 
@@ -88,5 +116,36 @@ describe("createApp", () => {
         delaySeconds: null
       }
     ]);
+  });
+
+  it("returns arrivals for a stop", async () => {
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
+
+    const response = await request(app).get("/arrivals/8460B001");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        routeShortName: "401",
+        headsign: "Eyre Square",
+        scheduledArrival: "18:36:30",
+        delaySeconds: 120
+      }
+    ]);
+  });
+
+  it("returns 400 when stopId is blank", async () => {
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
+
+    const response = await request(app).get("/arrivals/%20");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: "stopId is required." });
   });
 });
