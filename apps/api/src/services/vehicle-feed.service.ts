@@ -54,6 +54,7 @@ export class VehicleFeedService {
 
   public async getVehicles(): Promise<Vehicle[]> {
     const now = Date.now();
+    const upstreamUrl = this.getUpstreamVehiclesUrl();
 
     if (
       this.vehiclesCache !== null &&
@@ -62,8 +63,8 @@ export class VehicleFeedService {
       return this.vehiclesCache.vehicles;
     }
 
-    const response = await fetch(this.env.UPSTREAM_VEHICLES_URL, {
-      headers: this.buildHeaders()
+    const response = await fetch(upstreamUrl, {
+      headers: this.buildHeaders(upstreamUrl)
     });
 
     if (!response.ok) {
@@ -91,11 +92,17 @@ export class VehicleFeedService {
     return vehicles;
   }
 
-  private buildHeaders(): Headers {
-    const headers = new Headers();
-    const upstreamUrl = new URL(this.env.UPSTREAM_VEHICLES_URL);
+  private getUpstreamVehiclesUrl(): string {
+    return this.env.NODE_ENV === "production"
+      ? this.env.UPSTREAM_VEHICLES_URL_PROD
+      : this.env.UPSTREAM_VEHICLES_URL_DEV;
+  }
 
-    if (upstreamUrl.hostname === "api.nationaltransport.ie") {
+  private buildHeaders(upstreamUrl: string): Headers {
+    const headers = new Headers();
+    const upstreamHost = new URL(upstreamUrl);
+
+    if (upstreamHost.hostname === "api.nationaltransport.ie") {
       headers.set(this.env.NTA_API_HEADER_NAME, this.env.NTA_API_KEY);
       headers.set("x-api-key", this.env.NTA_API_KEY);
     }
