@@ -1,0 +1,153 @@
+
+<style>
+#erd2 { padding: 0.5rem 0; }
+#erd2 svg { width: 100%; height: auto; }
+</style>
+<div id="erd2"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#1e1d28' : '#EEEDFE',
+    primaryTextColor: dark ? '#c2c0b6' : '#3C3489',
+    primaryBorderColor: dark ? '#534AB7' : '#534AB7',
+    attributeBackgroundColorOdd: dark ? '#18181c' : '#f8f8f5',
+    attributeBackgroundColorEven: dark ? '#1e1e24' : '#ffffff',
+  },
+});
+
+const diagram = `erDiagram
+
+  delay_observations_raw {
+    bigserial id PK
+    timestamptz observed_at
+    varchar trip_id
+    varchar route_id
+    date start_date
+    varchar start_time
+    smallint direction_id
+    varchar stop_id
+    smallint stop_sequence
+    integer arrival_delay
+    integer departure_delay
+    varchar schedule_relationship
+  }
+
+  vehicle_positions_raw {
+    bigserial id PK
+    timestamptz observed_at
+    varchar vehicle_id
+    varchar trip_id
+    varchar route_id
+    smallint direction_id
+    float latitude
+    float longitude
+    real bearing
+    real speed
+  }
+
+  trips {
+    varchar trip_id PK
+    varchar route_id FK
+    varchar trip_headsign
+    smallint direction_id
+  }
+
+  routes {
+    varchar route_id PK
+    varchar route_short_name
+    varchar route_long_name
+    integer route_type
+  }
+
+  stops {
+    varchar stop_id PK
+    varchar stop_name
+    float stop_lat
+    float stop_lon
+  }
+
+  stop_times {
+    varchar trip_id FK
+    varchar stop_id FK
+    varchar arrival_time
+    varchar departure_time
+    integer stop_sequence
+  }
+
+  weather_log {
+    bigserial id PK
+    timestamptz hour_bucket
+    real rain_mm
+    real wind_kmh
+    real temperature_c
+    real visibility_km
+  }
+
+  public_holidays_ie {
+    date holiday_date PK
+    varchar name
+  }
+
+  ml_features {
+    bigint observation_id PK
+    varchar stop_id
+    varchar route_short_name
+    smallint direction_id
+    float hour_of_day
+    float day_of_week
+    float month
+    boolean is_peak_hour
+    boolean is_weekend
+    boolean is_public_holiday
+    real rain_mm
+    real wind_kmh
+    integer delay_sec
+  }
+
+  delay_observations_raw ||--o{ ml_features : "trip_id JOIN"
+  trips ||--o{ delay_observations_raw : "trip_id"
+  routes ||--o{ trips : "route_id"
+  stops ||--o{ stop_times : "stop_id"
+  trips ||--o{ stop_times : "trip_id"
+  weather_log ||--o{ ml_features : "hora bucket"
+  public_holidays_ie ||--o{ ml_features : "fecha viaje"
+`;
+
+const { svg } = await mermaid.render('erd2-svg', diagram);
+document.getElementById('erd2').innerHTML = svg;
+
+document.querySelectorAll('#erd2 svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd2 svg .row-rect-odd path, #erd2 svg .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

@@ -1,0 +1,16 @@
+{
+  "name": "ireland-bus-tracking",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @bus-tracker/shared && npm run build --workspace @bus-tracker/api && npm run build --workspace @bus-tracker/web",
+    "dev": "npm run dev --workspace @bus-tracker/api",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspace @bus-tracker/shared && npm run test --workspace @bus-tracker/api && npm run test --workspace @bus-tracker/web"
+  }
+}
