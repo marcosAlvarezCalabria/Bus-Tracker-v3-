@@ -1,23 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { vehicleFeedSchema } from "./index.js";
+import { vehicleListSchema } from "./index.js";
 
-describe("vehicleFeedSchema", () => {
+describe("vehicleListSchema", () => {
   it("accepts nullable coordinates", () => {
-    const payload = vehicleFeedSchema.parse({
-      updatedAt: new Date().toISOString(),
-      vehicles: [
-        {
-          id: "vehicle-1",
-          routeShortName: "401",
-          stopId: "8460B001",
-          latitude: null,
-          longitude: null,
-          delaySeconds: null
-        }
-      ]
-    });
+    const payload = vehicleListSchema.parse([
+      {
+        id: "vehicle-1",
+        routeShortName: "401",
+        stopId: "8460B001",
+        lat: null,
+        lng: null,
+        delaySeconds: null
+      }
+    ]);
 
-    expect(payload.vehicles[0]?.stopId).toBe("8460B001");
+    expect(payload[0]?.stopId).toBe("8460B001");
   });
 });

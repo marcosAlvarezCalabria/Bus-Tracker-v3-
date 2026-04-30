@@ -11,13 +11,16 @@
   },
   "dependencies": {
     "@bus-tracker/shared": "0.1.0",
+    "adm-zip": "^0.5.16",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/node": "^22.15.3",

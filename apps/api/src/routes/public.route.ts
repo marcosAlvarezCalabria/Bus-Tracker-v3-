@@ -1,15 +1,19 @@
 import { Router } from "express";
 
-import { vehicleFeedSchema } from "@bus-tracker/shared";
+import type { VehicleFeedService } from "../services/vehicle-feed.service.js";
 
-export const publicRouter = Router();
+export const createPublicRouter = (vehicleFeedService: VehicleFeedService) => {
+  const publicRouter = Router();
 
-publicRouter.get("/vehicles", (_request, response) => {
-  const payload = vehicleFeedSchema.parse({
-    updatedAt: new Date().toISOString(),
-    vehicles: []
+  publicRouter.get("/vehicles", async (_request, response, next) => {
+    try {
+      const payload = await vehicleFeedService.getVehicles();
+
+      response.status(200).json(payload);
+    } catch (error) {
+      next(error);
+    }
   });
 
-  response.status(200).json(payload);
-});
-
+  return publicRouter;
+};

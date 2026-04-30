@@ -6,10 +6,19 @@ import rateLimit from "express-rate-limit";
 import type { AppEnv } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { healthRouter } from "./routes/health.route.js";
-import { publicRouter } from "./routes/public.route.js";
+import { createPublicRouter } from "./routes/public.route.js";
+import { GtfsStaticService } from "./services/gtfs-static.service.js";
+import { VehicleFeedService } from "./services/vehicle-feed.service.js";
 
-export const createApp = (env: AppEnv) => {
+type AppDependencies = {
+  vehicleFeedService?: VehicleFeedService;
+};
+
+export const createApp = (env: AppEnv, dependencies: AppDependencies = {}) => {
   const app = express();
+  const vehicleFeedService =
+    dependencies.vehicleFeedService ??
+    new VehicleFeedService(env, new GtfsStaticService(env));
 
   app.disable("x-powered-by");
   app.use(helmet());
@@ -30,10 +39,9 @@ export const createApp = (env: AppEnv) => {
   app.use(express.json());
 
   app.use("/health", healthRouter);
-  app.use("/api", publicRouter);
+  app.use("/", createPublicRouter(vehicleFeedService));
 
   app.use(errorHandler);
 
   return app;
 };
-

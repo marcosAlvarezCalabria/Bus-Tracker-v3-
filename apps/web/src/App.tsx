@@ -1,9 +1,6 @@
-import { vehicleFeedSchema } from "@bus-tracker/shared";
+import { vehicleListSchema } from "@bus-tracker/shared";
 
-const samplePayload = vehicleFeedSchema.parse({
-  updatedAt: new Date().toISOString(),
-  vehicles: []
-});
+const samplePayload = vehicleListSchema.parse([]);
 
 export const App = () => {
   return (
@@ -23,4 +20,3 @@ export const App = () => {
     </main>
   );
 };
-
