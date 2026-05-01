@@ -16,18 +16,70 @@ type VehicleRow = {
 };
 
 export class VehicleFeedService {
-  private readonly pool: Pick<Pool, "query">;
+  private readonly env: AppEnv;
+  private readonly pool?: Pick<Pool, "query">;
 
   public constructor(env: AppEnv, pool?: Pick<Pool, "query">) {
+    this.env = env;
     this.pool =
       pool ??
-      new Pool({
-        connectionString: env.DATABASE_URL
-      });
+      (env.NODE_ENV === "production"
+        ? new Pool({
+            connectionString: env.DATABASE_URL
+          })
+        : undefined);
   }
 
   public async getVehicles(route?: string): Promise<Vehicle[]> {
+    if (this.env.NODE_ENV !== "production") {
+      return this.getVehiclesFromUpstream(route);
+    }
+
+    return this.getVehiclesFromDatabase(route);
+  }
+
+  private async getVehiclesFromUpstream(route?: string): Promise<Vehicle[]> {
     try {
+      const baseUrl = this.env.ARRIVALS_UPSTREAM_URL.replace(/\/+$/, "");
+      const requestUrl = new URL(`${baseUrl}/vehicles`);
+
+      if (route?.trim()) {
+        requestUrl.searchParams.set("route", route.trim());
+      }
+
+      const response = await fetch(requestUrl);
+
+      if (!response.ok) {
+        const responseText = await response.text();
+
+        logger.error({
+          message: "Upstream vehicles request failed.",
+          status: response.status,
+          body: responseText
+        });
+
+        throw new HttpError(502, "Unable to fetch vehicles from upstream.");
+      }
+
+      const payload = (await response.json()) as Vehicle[];
+
+      return vehicleListSchema.parse(payload);
+    } catch (error) {
+      logger.error(error);
+      if (error instanceof HttpError) {
+        throw error;
+      }
+
+      throw new HttpError(502, "Unable to fetch vehicles from upstream.");
+    }
+  }
+
+  private async getVehiclesFromDatabase(route?: string): Promise<Vehicle[]> {
+    try {
+      if (!this.pool) {
+        throw new HttpError(500, "Database pool is not configured.");
+      }
+
       const normalizedRoute = route?.trim();
       const values: string[] = [];
       let query = `
@@ -40,8 +92,9 @@ SELECT
   vp.trip_id as "tripId",
   r.route_short_name as "routeShortName"
 FROM vehicle_positions_galway vp
-LEFT JOIN routes r ON vp.route_id = r.route_id
-WHERE vp.observed_at > NOW() - INTERVAL '2 minutes'
+LEFT JOIN trips t ON vp.trip_id = t.trip_id
+LEFT JOIN routes r ON t.route_id = r.route_id
+WHERE vp.observed_at > NOW() - INTERVAL '6 minutes'
 `;
 
       if (normalizedRoute) {
