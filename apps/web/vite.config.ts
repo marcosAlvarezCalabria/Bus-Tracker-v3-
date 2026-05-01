@@ -6,6 +6,14 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      "/api": {
+        target: "https://api.wwwmarcos-alvarez.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api/, "")
+      }
+    }
   }
 });
