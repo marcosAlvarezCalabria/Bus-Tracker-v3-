@@ -24,7 +24,7 @@ export const createApp = (env: AppEnv, dependencies: AppDependencies = {}) => {
   app.use(helmet());
   app.use(
     cors({
-      origin: [env.CORS_ORIGIN],
+      origin: env.CORS_ORIGIN,
       credentials: true
     })
   );

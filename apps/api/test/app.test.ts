@@ -12,7 +12,7 @@ const env: AppEnv = {
   NODE_ENV: "test",
   DATABASE_URL: "postgresql://user:pass@localhost:5432/galway_bus",
   ARRIVALS_UPSTREAM_URL: "https://api.wwwmarcos-alvarez.com",
-  CORS_ORIGIN: "http://localhost:5173",
+  CORS_ORIGIN: ["http://localhost:5173", "https://bus-tracker-v3.pages.dev"],
   CACHE_TTL_MS: 10_000
 };
 
@@ -147,5 +147,21 @@ describe("createApp", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: "stopId is required." });
+  });
+
+  it("allows requests from the deployed frontend origin", async () => {
+    const app = createApp(env, {
+      arrivalsService: arrivalsServiceStub,
+      vehicleFeedService: vehicleFeedServiceStub
+    });
+
+    const response = await request(app)
+      .get("/vehicles")
+      .set("Origin", "https://bus-tracker-v3.pages.dev");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "https://bus-tracker-v3.pages.dev"
+    );
   });
 });
