@@ -7,7 +7,7 @@
     "build": "npm run build --workspace @bus-tracker/shared && tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "test": "vitest run"
+    "test": "npm run build --workspace @bus-tracker/shared && vitest run"
   },
   "dependencies": {
     "@bus-tracker/shared": "0.1.0",
