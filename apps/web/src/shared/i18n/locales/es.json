@@ -1,0 +1,18 @@
+{
+  "app_title": "Galway Bus Tracker",
+  "search_placeholder": "Busca parada o línea...",
+  "use_location": "Usar mi ubicación",
+  "no_results": "No encontramos paradas para '{{query}}'",
+  "updated_ago": "Actualizado hace {{minutes}} min",
+  "refresh": "Actualizar",
+  "on_time": "A tiempo",
+  "no_connection": "No se pudieron cargar las llegadas. Revisa tu conexión.",
+  "retry": "Reintentar",
+  "empty_home": "Busca tu parada o línea",
+  "endpoint_label": "Petición en vivo a",
+  "view_vehicles": "Ver vehículos",
+  "view_stop": "Ver parada {{stopId}}",
+  "vehicles_received": "Vehículos recibidos: {{count}}",
+  "arrivals_received": "Llegadas recibidas para {{stopId}}: {{count}}",
+  "loading": "Cargando..."
+}

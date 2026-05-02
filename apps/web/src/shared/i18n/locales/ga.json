@@ -1,0 +1,18 @@
+{
+  "app_title": "Galway Bus Tracker",
+  "search_placeholder": "Cuardaigh stad nó líne...",
+  "use_location": "Úsáid mo shuíomh",
+  "no_results": "Níor aimsíodh stadanna do '{{query}}'",
+  "updated_ago": "Nuashonraithe {{minutes}} nóim ó shin",
+  "refresh": "Athnuaigh",
+  "on_time": "In am",
+  "no_connection": "Níorbh fhéidir arrivals a lódáil. Seiceáil do nasc.",
+  "retry": "Triail arís",
+  "empty_home": "Cuardaigh do stad nó líne",
+  "endpoint_label": "Iarratas beo chuig",
+  "view_vehicles": "Féach feithiclí",
+  "view_stop": "Féach stad {{stopId}}",
+  "vehicles_received": "Feithiclí faighte: {{count}}",
+  "arrivals_received": "Teachtanna faighte do {{stopId}}: {{count}}",
+  "loading": "Ag lódáil..."
+}
