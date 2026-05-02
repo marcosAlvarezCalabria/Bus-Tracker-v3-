@@ -12,6 +12,8 @@
   "popular_lines": "Línte coitianta",
   "locating": "Suíomh á aimsiú...",
   "location_error": "Níorbh fhéidir do shuíomh a aimsiú. Triail arís.",
+  "scheduled": "Sceidealta",
+  "no_arrivals_found": "Níor aimsíodh teachtanna don stad seo.",
   "endpoint_label": "Iarratas beo chuig",
   "view_vehicles": "Féach feithiclí",
   "view_stop": "Féach stad {{stopId}}",

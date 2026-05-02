@@ -12,6 +12,8 @@
   "popular_lines": "Líneas populares",
   "locating": "Buscando ubicación...",
   "location_error": "No se pudo obtener tu ubicación. Inténtalo de nuevo.",
+  "scheduled": "Programado",
+  "no_arrivals_found": "No se encontraron llegadas para esta parada.",
   "endpoint_label": "Petición en vivo a",
   "view_vehicles": "Ver vehículos",
   "view_stop": "Ver parada {{stopId}}",

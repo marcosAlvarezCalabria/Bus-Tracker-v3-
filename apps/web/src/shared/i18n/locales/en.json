@@ -12,6 +12,8 @@
   "popular_lines": "Popular lines",
   "locating": "Locating...",
   "location_error": "Could not get location. Try again.",
+  "scheduled": "Scheduled",
+  "no_arrivals_found": "No arrivals found for this stop.",
   "endpoint_label": "Live request to",
   "view_vehicles": "View vehicles",
   "view_stop": "View stop {{stopId}}",
