@@ -66,4 +66,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name bus-tracker-v3 --branch main
+          workingDirectory: apps/web
+          command: pages deploy dist --project-name bus-tracker-v3 --branch main
