@@ -15,4 +15,6 @@ Monorepo scaffold with:
 
 The API refuses to start if any required environment variable is missing or invalid.
 
+CI deploy workflow is configured to run on pushes to `main`.
+
 Remote repository name: `Bus-Tracker-v3-`.
