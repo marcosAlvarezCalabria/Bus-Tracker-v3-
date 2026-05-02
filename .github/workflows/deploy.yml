@@ -69,8 +69,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
-          workingDirectory: apps/web
-          command: pages deploy dist --project-name=bus-tracker-v3
+          command: pages deploy apps/web/dist --project-name=bus-tracker-v3
 
       - name: Show Cloudflare deploy logs
         if: always()
