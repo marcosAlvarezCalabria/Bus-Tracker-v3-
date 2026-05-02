@@ -62,6 +62,8 @@ jobs:
         run: npm run build --workspace=apps/web
 
       - name: Deploy web to Cloudflare Pages
+        id: deploy-web
+        continue-on-error: true
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -69,3 +71,15 @@ jobs:
           wranglerVersion: "4"
           workingDirectory: apps/web
           command: pages deploy dist --project-name=bus-tracker-v3
+
+      - name: Show Cloudflare deploy logs
+        if: always()
+        run: |
+          echo "STDOUT:"
+          echo "${{ steps.deploy-web.outputs.command-output }}"
+          echo "STDERR:"
+          echo "${{ steps.deploy-web.outputs.command-stderr }}"
+
+      - name: Fail if web deploy failed
+        if: steps.deploy-web.outcome == 'failure'
+        run: exit 1
