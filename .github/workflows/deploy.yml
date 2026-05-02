@@ -1,4 +1,4 @@
-name: Deploy API
+name: Deploy
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
       - name: Build API
         run: npm run build --workspace=apps/api
 
-      - name: Deploy to VPS
+      - name: Deploy API to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -40,3 +40,30 @@ jobs:
             npm ci
             npm run build --workspace=apps/api
             pm2 restart ireland-bus-api --update-env
+
+  deploy-web:
+    needs: test-build-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+
+      - name: Deploy web to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/web/dist --project-name bus-tracker-v3 --branch main
