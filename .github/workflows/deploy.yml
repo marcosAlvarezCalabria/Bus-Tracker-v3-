@@ -60,6 +60,8 @@ jobs:
 
       - name: Build web
         run: npm run build --workspace=apps/web
+        env:
+          VITE_API_URL: https://api.wwwmarcos-alvarez.com
 
       - name: Deploy web to Cloudflare Pages
         id: deploy-web
