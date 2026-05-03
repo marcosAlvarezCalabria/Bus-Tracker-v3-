@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { SearchBar } from "../components/SearchBar";
 import { LanguageSelector } from "../components/LanguageSelector";
+import { BusMap } from "../components/map/BusMap";
 import { POPULAR_LINES } from "../../shared/constants";
 
 export const HomePage = () => {
@@ -11,6 +12,7 @@ export const HomePage = () => {
   const navigate = useNavigate();
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   const goToSearch = useCallback(
     (query: string) => {
@@ -49,6 +51,13 @@ export const HomePage = () => {
       }
     );
   };
+
+  const handleStopClick = useCallback(
+    (stopId: string) => {
+      navigate(`/stop/${encodeURIComponent(stopId)}`);
+    },
+    [navigate]
+  );
 
   return (
     <section className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-slate-100">
@@ -109,6 +118,58 @@ export const HomePage = () => {
                 {line}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Live Route Map
+              </h2>
+              <p className="mt-2 text-sm text-slate-300">
+                {selectedRoute
+                  ? `Showing buses for route ${selectedRoute}.`
+                  : "Select a route to display live vehicles on the map."}
+              </p>
+            </div>
+            <button
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+              onClick={() => {
+                setSelectedRoute(null);
+              }}
+              type="button"
+            >
+              Clear map
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            {POPULAR_LINES.map((line) => {
+              const route = String(line);
+              const isSelected = selectedRoute === route;
+
+              return (
+                <button
+                  className={
+                    isSelected
+                      ? "rounded-full border border-primary-dark bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-dark"
+                      : "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                  }
+                  key={`map-${line}`}
+                  onClick={() => {
+                    setSelectedRoute(route);
+                  }}
+                  type="button"
+                >
+                  Route {line}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 h-[60vh] w-full overflow-hidden rounded-[1.5rem] border border-white/10">
+            <BusMap onStopClick={handleStopClick} selectedRoute={selectedRoute} />
           </div>
         </div>
       </div>

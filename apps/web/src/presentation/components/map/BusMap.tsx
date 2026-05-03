@@ -1,0 +1,330 @@
+import { useEffect, useRef, useState } from "react";
+import maplibregl, {
+  type GeoJSONSource,
+  type StyleSpecification
+} from "maplibre-gl";
+import type { Feature, FeatureCollection, Point } from "geojson";
+
+import type { BusPosition, Stop } from "../../../domain/types";
+import { getStops, getVehiclesByRoute } from "../../../infrastructure/api";
+
+interface BusMapProps {
+  selectedRoute: string | null;
+  onStopClick: (stopId: string) => void;
+}
+
+type StopFeatureProperties = {
+  stopId: string;
+  stopName: string;
+};
+
+type BusFeatureProperties = {
+  routeShortName: string;
+  vehicleId: string;
+};
+
+const GALWAY_CENTER: [number, number] = [-9.0568, 53.2707];
+const ANIMATION_DURATION_MS = 1000;
+const REFRESH_INTERVAL_MS = 4000;
+
+const baseMapStyle: StyleSpecification = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors"
+    }
+  },
+  layers: [{ id: "osm-layer", type: "raster", source: "osm" }]
+};
+
+const emptyBusesCollection = (): FeatureCollection<Point, BusFeatureProperties> => ({
+  type: "FeatureCollection",
+  features: []
+});
+
+const createStopsCollection = (
+  stops: Stop[]
+): FeatureCollection<Point, StopFeatureProperties> => ({
+  type: "FeatureCollection",
+  features: stops.map<Feature<Point, StopFeatureProperties>>((stop) => ({
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [stop.lon, stop.lat]
+    },
+    properties: {
+      stopId: stop.id,
+      stopName: stop.name
+    }
+  }))
+});
+
+const createBusesCollection = (
+  vehicles: BusPosition[],
+  coordinatesByVehicleId?: Map<string, [number, number]>
+): FeatureCollection<Point, BusFeatureProperties> => ({
+  type: "FeatureCollection",
+  features: vehicles.map<Feature<Point, BusFeatureProperties>>((vehicle) => {
+    const coordinates = coordinatesByVehicleId?.get(vehicle.vehicleId) ?? [vehicle.lng, vehicle.lat];
+
+    return {
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates
+      },
+      properties: {
+        routeShortName: vehicle.routeShortName,
+        vehicleId: vehicle.vehicleId
+      }
+    };
+  })
+});
+
+export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const onStopClickRef = useRef(onStopClick);
+  const stopsLoadedRef = useRef(false);
+  const previousPositionsRef = useRef<Map<string, [number, number]>>(new Map());
+  const animationFrameRef = useRef<number | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    onStopClickRef.current = onStopClick;
+  }, [onStopClick]);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) {
+      return;
+    }
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: baseMapStyle,
+      center: GALWAY_CENTER,
+      zoom: 13
+    });
+
+    mapRef.current = map;
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+    map.on("load", () => {
+      if (!map.getSource("stops-source")) {
+        map.addSource("stops-source", {
+          type: "geojson",
+          data: createStopsCollection([])
+        });
+      }
+
+      if (!map.getLayer("stops-layer")) {
+        map.addLayer({
+          id: "stops-layer",
+          type: "circle",
+          source: "stops-source",
+          paint: {
+            "circle-color": "#660033",
+            "circle-radius": 6,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 1.5
+          }
+        });
+      }
+
+      if (!map.getSource("buses-source")) {
+        map.addSource("buses-source", {
+          type: "geojson",
+          data: emptyBusesCollection()
+        });
+      }
+
+      if (!map.getLayer("buses-layer")) {
+        map.addLayer({
+          id: "buses-layer",
+          type: "symbol",
+          source: "buses-source",
+          layout: {
+            "text-field": ["get", "routeShortName"],
+            "text-size": 12,
+            "text-allow-overlap": true,
+            "text-ignore-placement": true
+          },
+          paint: {
+            "text-color": "#ffffff",
+            "text-halo-color": "#660033",
+            "text-halo-width": 8,
+            "text-halo-blur": 0.5
+          }
+        });
+      }
+
+      map.on("click", "stops-layer", (event) => {
+        const feature = event.features?.[0];
+
+        if (!feature) {
+          return;
+        }
+
+        const properties = feature.properties as Record<string, unknown> | null;
+        const stopId = properties?.stopId;
+
+        if (typeof stopId === "string" && stopId.length > 0) {
+          onStopClickRef.current(stopId);
+        }
+      });
+
+      map.on("mouseenter", "stops-layer", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "stops-layer", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      void (async () => {
+        if (stopsLoadedRef.current) {
+          return;
+        }
+
+        const stops = await getStops();
+        const stopsSource = map.getSource("stops-source");
+
+        if (stopsSource && "setData" in stopsSource) {
+          (stopsSource as GeoJSONSource).setData(createStopsCollection(stops));
+          stopsLoadedRef.current = true;
+        }
+      })();
+
+      setMapReady(true);
+    });
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+      }
+
+      map.remove();
+      mapRef.current = null;
+      setMapReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !map.isStyleLoaded()) {
+      return;
+    }
+
+    const busesSource = map.getSource("buses-source");
+
+    if (!busesSource || !("setData" in busesSource)) {
+      return;
+    }
+
+    const source = busesSource as GeoJSONSource;
+
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (selectedRoute === null) {
+      previousPositionsRef.current = new Map();
+      source.setData(emptyBusesCollection());
+      return;
+    }
+
+    const applyVehiclePositions = (vehicles: BusPosition[]) => {
+      const nextPositions = new Map<string, [number, number]>();
+
+      for (const vehicle of vehicles) {
+        nextPositions.set(vehicle.vehicleId, [vehicle.lng, vehicle.lat]);
+      }
+
+      const previousPositions = previousPositionsRef.current;
+      const shouldAnimate = vehicles.some((vehicle) => previousPositions.has(vehicle.vehicleId));
+
+      if (!shouldAnimate) {
+        source.setData(createBusesCollection(vehicles, nextPositions));
+        previousPositionsRef.current = nextPositions;
+        return;
+      }
+
+      const startPositions = new Map(previousPositions);
+      const startTime = performance.now();
+
+      const animate = (frameTime: number) => {
+        const progress = Math.min((frameTime - startTime) / ANIMATION_DURATION_MS, 1);
+        const interpolatedPositions = new Map<string, [number, number]>();
+
+        for (const vehicle of vehicles) {
+          const previous = startPositions.get(vehicle.vehicleId);
+
+          if (!previous) {
+            interpolatedPositions.set(vehicle.vehicleId, [vehicle.lng, vehicle.lat]);
+            continue;
+          }
+
+          const interpolatedLng = previous[0] + (vehicle.lng - previous[0]) * progress;
+          const interpolatedLat = previous[1] + (vehicle.lat - previous[1]) * progress;
+
+          interpolatedPositions.set(vehicle.vehicleId, [interpolatedLng, interpolatedLat]);
+        }
+
+        source.setData(createBusesCollection(vehicles, interpolatedPositions));
+
+        if (progress < 1) {
+          animationFrameRef.current = window.requestAnimationFrame(animate);
+          return;
+        }
+
+        animationFrameRef.current = null;
+      };
+
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(animate);
+      previousPositionsRef.current = nextPositions;
+    };
+
+    const refreshVehicles = async () => {
+      const vehicles = await getVehiclesByRoute(selectedRoute);
+      applyVehiclePositions(vehicles);
+    };
+
+    void refreshVehicles();
+    intervalRef.current = window.setInterval(() => {
+      void refreshVehicles();
+    }, REFRESH_INTERVAL_MS);
+
+    return () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [mapReady, selectedRoute]);
+
+  return <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />;
+};

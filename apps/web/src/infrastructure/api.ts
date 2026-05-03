@@ -1,11 +1,13 @@
-import type { Arrival, Stop } from "../domain/types";
+import type { Arrival, BusPosition, Stop } from "../domain/types";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const apiBaseUrl = import.meta.env.DEV ? "/api" : apiUrl;
 
 type StopApiResponse = {
-  id: string;
-  name: string;
+  id?: string;
+  stopId?: string;
+  name?: string;
+  stopName?: string;
   lat: number;
   lon?: number;
   lng?: number;
@@ -57,8 +59,8 @@ export const searchStops = async (query: string): Promise<Stop[]> => {
   );
 
   return payload.map((stop) => ({
-    id: stop.id,
-    name: stop.name,
+    id: stop.id ?? stop.stopId ?? "",
+    name: stop.name ?? stop.stopName ?? "",
     lat: stop.lat,
     lon: stop.lon ?? stop.lng ?? 0,
     direction: stop.direction
@@ -89,4 +91,28 @@ export const getArrivals = async (stopId: string): Promise<Arrival[]> => {
       delaySeconds: arrival.delaySeconds ?? undefined
     };
   });
+};
+
+export const getVehiclesByRoute = async (route: string): Promise<BusPosition[]> => {
+  try {
+    return await fetchJson<BusPosition[]>(`/vehicles?route=${encodeURIComponent(route)}`);
+  } catch {
+    return [];
+  }
+};
+
+export const getStops = async (): Promise<Stop[]> => {
+  try {
+    const payload = await fetchJson<StopApiResponse[]>("/stops");
+
+    return payload.map((stop) => ({
+      id: stop.id ?? stop.stopId ?? "",
+      name: stop.name ?? stop.stopName ?? "",
+      lat: stop.lat,
+      lon: stop.lon ?? stop.lng ?? 0,
+      direction: stop.direction
+    }));
+  } catch {
+    return [];
+  }
 };

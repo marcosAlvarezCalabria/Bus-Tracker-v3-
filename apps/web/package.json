@@ -12,6 +12,7 @@
     "@bus-tracker/shared": "0.1.0",
     "@tanstack/react-query": "^5.100.8",
     "i18next": "^26.0.8",
+    "maplibre-gl": "^5.24.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^17.0.6",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "@types/maplibre-gl": "^1.13.2",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",

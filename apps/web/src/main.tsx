@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
 import "./shared/i18n";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
 
 const queryClient = new QueryClient();

@@ -16,3 +16,13 @@ export interface Arrival {
 }
 
 export type DelayLevel = "on-time" | "warning" | "late";
+
+export interface BusPosition {
+  lat: number;
+  lng: number;
+  routeId: string;
+  tripId: string;
+  routeShortName: string;
+  routeName: string;
+  vehicleId: string;
+}
