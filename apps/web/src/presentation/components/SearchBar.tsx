@@ -51,7 +51,7 @@ export const SearchBar = ({ onSearch }: SearchBarProps) => {
           value={query}
         />
         <button
-          className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/90 text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
           type="submit"
         >
           <svg

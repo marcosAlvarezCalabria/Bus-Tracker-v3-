@@ -33,7 +33,7 @@ export const DelayBadge = ({ delaySeconds }: DelayBadgeProps) => {
 
   if (level === "on-time") {
     return (
-      <span className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-200">
+      <span className="rounded-full border border-delay-ok/30 bg-delay-ok/15 px-3 py-1 text-xs font-medium text-delay-ok">
         {t("on_time")}
       </span>
     );
@@ -42,8 +42,8 @@ export const DelayBadge = ({ delaySeconds }: DelayBadgeProps) => {
   const delayMinutes = Math.max(1, Math.round(delaySeconds / 60));
   const className =
     level === "warning"
-      ? "border-amber-400/30 bg-amber-400/15 text-amber-200"
-      : "border-rose-400/30 bg-rose-400/15 text-rose-200";
+      ? "border-delay-warn/30 bg-delay-warn/15 text-delay-warn"
+      : "border-delay-late/30 bg-delay-late/15 text-delay-late";
 
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-medium ${className}`}>

@@ -60,8 +60,8 @@ export const HomePage = () => {
   );
 
   return (
-    <section className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-slate-100">
-      <div className="w-full max-w-3xl rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur sm:p-8">
+    <section className="flex min-h-screen items-center justify-center bg-surface px-4 py-10 text-slate-100">
+      <div className="w-full max-w-3xl rounded-[2rem] border border-white/10 bg-surface-alt p-6 shadow-2xl shadow-slate-950/40 backdrop-blur sm:p-8">
         <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-xl">
             <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">{t("app_title")}</h1>
@@ -76,7 +76,7 @@ export const HomePage = () => {
 
         <div className="mt-5">
           <button
-            className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-medium text-on-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isLocating}
             onClick={handleUseLocation}
             type="button"
