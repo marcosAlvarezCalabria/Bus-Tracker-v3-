@@ -1,7 +1,6 @@
 import type { Arrival, BusPosition, Stop } from "../domain/types";
 
-const apiUrl = import.meta.env.VITE_API_URL;
-const apiBaseUrl = import.meta.env.DEV ? "/api" : apiUrl;
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
 type StopApiResponse = {
   id?: string;
