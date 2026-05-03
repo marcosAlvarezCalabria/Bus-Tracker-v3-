@@ -11,6 +11,7 @@ import { getStops, getVehiclesByRoute } from "../../../infrastructure/api";
 interface BusMapProps {
   selectedRoute: string | null;
   onStopClick: (stopId: string) => void;
+  userLocation: { lat: number; lng: number } | null;
 }
 
 type StopFeatureProperties = {
@@ -21,6 +22,10 @@ type StopFeatureProperties = {
 type BusFeatureProperties = {
   routeShortName: string;
   vehicleId: string;
+};
+
+type UserLocationFeatureProperties = {
+  kind: "user-location";
 };
 
 const GALWAY_CENTER: [number, number] = [-9.0568, 53.2707];
@@ -43,6 +48,26 @@ const baseMapStyle: StyleSpecification = {
 const emptyBusesCollection = (): FeatureCollection<Point, BusFeatureProperties> => ({
   type: "FeatureCollection",
   features: []
+});
+
+const createUserLocationCollection = (
+  userLocation: { lat: number; lng: number } | null
+): FeatureCollection<Point, UserLocationFeatureProperties> => ({
+  type: "FeatureCollection",
+  features: userLocation
+    ? [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [userLocation.lng, userLocation.lat]
+          },
+          properties: {
+            kind: "user-location"
+          }
+        }
+      ]
+    : []
 });
 
 const createStopsCollection = (
@@ -88,11 +113,41 @@ const createBusesCollection = (
 const resolveVehicleId = (bus: BusPosition): string =>
   bus.vehicleId ?? bus.id ?? `${bus.lat}-${bus.lng}`;
 
-export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const getDistanceInMeters = (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+) => {
+  const earthRadius = 6_371_000;
+  const deltaLat = toRadians(to.lat - from.lat);
+  const deltaLng = toRadians(to.lng - from.lng);
+  const fromLat = toRadians(from.lat);
+  const toLat = toRadians(to.lat);
+  const haversine =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(fromLat) * Math.cos(toLat) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+  return 2 * earthRadius * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+};
+
+const getNearbyStops = (stops: Stop[], userLocation: { lat: number; lng: number }): Stop[] =>
+  stops
+    .map((stop) => ({
+      stop,
+      distance: getDistanceInMeters(userLocation, { lat: stop.lat, lng: stop.lon })
+    }))
+    .filter(({ distance }) => distance <= 1200)
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, 25)
+    .map(({ stop }) => stop);
+
+export const BusMap = ({ selectedRoute, onStopClick, userLocation }: BusMapProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onStopClickRef = useRef(onStopClick);
   const stopsLoadedRef = useRef(false);
+  const allStopsRef = useRef<Stop[]>([]);
   const previousPositionsRef = useRef<Map<string, [number, number]>>(new Map());
   const animationFrameRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
@@ -146,6 +201,13 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
         });
       }
 
+      if (!map.getSource("user-location-source")) {
+        map.addSource("user-location-source", {
+          type: "geojson",
+          data: createUserLocationCollection(null)
+        });
+      }
+
       if (!map.getLayer("buses-layer")) {
         map.addLayer({
           id: "buses-layer",
@@ -162,6 +224,20 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
             "text-halo-color": "#660033",
             "text-halo-width": 8,
             "text-halo-blur": 0.5
+          }
+        });
+      }
+
+      if (!map.getLayer("user-location-layer")) {
+        map.addLayer({
+          id: "user-location-layer",
+          type: "circle",
+          source: "user-location-source",
+          paint: {
+            "circle-color": "#ffaacc",
+            "circle-radius": 8,
+            "circle-stroke-color": "#660033",
+            "circle-stroke-width": 3
           }
         });
       }
@@ -188,20 +264,6 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
       map.on("mouseleave", "stops-layer", () => {
         map.getCanvas().style.cursor = "";
       });
-
-      void (async () => {
-        if (stopsLoadedRef.current) {
-          return;
-        }
-
-        const stops = await getStops();
-        const stopsSource = map.getSource("stops-source");
-
-        if (stopsSource && "setData" in stopsSource) {
-          (stopsSource as GeoJSONSource).setData(createStopsCollection(stops));
-          stopsLoadedRef.current = true;
-        }
-      })();
 
       setMapReady(true);
     });
@@ -332,6 +394,59 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
       }
     };
   }, [mapReady, selectedRoute]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !map.isStyleLoaded()) {
+      return;
+    }
+
+    const stopsSource = map.getSource("stops-source");
+
+    if (!stopsSource || !("setData" in stopsSource)) {
+      return;
+    }
+
+    const source = stopsSource as GeoJSONSource;
+
+    if (userLocation === null) {
+      source.setData(createStopsCollection([]));
+      return;
+    }
+
+    const applyNearbyStops = (stops: Stop[]) => {
+      source.setData(createStopsCollection(getNearbyStops(stops, userLocation)));
+    };
+
+    if (stopsLoadedRef.current) {
+      applyNearbyStops(allStopsRef.current);
+      return;
+    }
+
+    void (async () => {
+      const stops = await getStops();
+      allStopsRef.current = stops;
+      stopsLoadedRef.current = true;
+      applyNearbyStops(stops);
+    })();
+  }, [mapReady, userLocation]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !mapReady || !map.isStyleLoaded()) {
+      return;
+    }
+
+    const userLocationSource = map.getSource("user-location-source");
+
+    if (!userLocationSource || !("setData" in userLocationSource)) {
+      return;
+    }
+
+    (userLocationSource as GeoJSONSource).setData(createUserLocationCollection(userLocation));
+  }, [mapReady, userLocation]);
 
   return <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />;
 };

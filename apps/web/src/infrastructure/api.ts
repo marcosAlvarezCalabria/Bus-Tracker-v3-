@@ -102,8 +102,17 @@ export const getVehiclesByRoute = async (route: string): Promise<BusPosition[]> 
 };
 
 export const getStops = async (): Promise<Stop[]> => {
-  // TODO: el endpoint /stops no existe aún en el upstream del VPS.
-  // Las paradas se activarán cuando el backend de producción
-  // lea de PostgreSQL (NODE_ENV=production).
-  return [];
+  try {
+    const payload = await fetchJson<StopApiResponse[]>("/stops");
+
+    return payload.map((stop) => ({
+      id: stop.id ?? stop.stopId ?? "",
+      name: stop.name ?? stop.stopName ?? "",
+      lat: stop.lat,
+      lon: stop.lon ?? stop.lng ?? 0,
+      direction: stop.direction
+    }));
+  } catch {
+    return [];
+  }
 };

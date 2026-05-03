@@ -1,8 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { SearchBar } from "../components/SearchBar";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { BusMap } from "../components/map/BusMap";
 import { POPULAR_LINES } from "../../shared/constants";
@@ -13,43 +12,64 @@ export const HomePage = () => {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const goToSearch = useCallback(
-    (query: string) => {
-      const trimmedQuery = query.trim();
-
-      if (trimmedQuery.length === 0) {
+  const requestUserLocation = useCallback(
+    (
+      options: {
+        silent?: boolean;
+        onSuccess?: (coords: { lat: number; lng: number }) => void;
+      } = {}
+    ) => {
+      if (!navigator.geolocation) {
+        if (!options.silent) {
+          setLocationError(t("location_error"));
+        }
         return;
       }
 
-      navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+      setIsLocating(true);
+
+      if (!options.silent) {
+        setLocationError(null);
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          setIsLocating(false);
+          setUserLocation(coords);
+          options.onSuccess?.(coords);
+        },
+        () => {
+          setIsLocating(false);
+          if (!options.silent) {
+            setLocationError(t("location_error"));
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000
+        }
+      );
     },
-    [navigate]
+    [t]
   );
 
+  useEffect(() => {
+    requestUserLocation({ silent: true });
+  }, [requestUserLocation]);
+
   const handleUseLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError(t("location_error"));
-      return;
-    }
-
-    setIsLocating(true);
-    setLocationError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLocating(false);
-        navigate(`/stop/nearest?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
-      },
-      () => {
-        setIsLocating(false);
-        setLocationError(t("location_error"));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000
+    requestUserLocation({
+      onSuccess: (coords) => {
+        navigate(`/stop/nearest?lat=${coords.lat}&lng=${coords.lng}`);
       }
-    );
+    });
   };
 
   const handleStopClick = useCallback(
@@ -69,10 +89,6 @@ export const HomePage = () => {
           </div>
           <LanguageSelector />
         </header>
-
-        <div className="mt-8">
-          <SearchBar onSearch={goToSearch} />
-        </div>
 
         <div className="mt-5">
           <button
@@ -100,26 +116,6 @@ export const HomePage = () => {
             {locationError}
           </p>
         ) : null}
-
-        <div className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-            {t("popular_lines")}
-          </h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {POPULAR_LINES.map((line) => (
-              <button
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-                key={line}
-                onClick={() => {
-                  goToSearch(String(line));
-                }}
-                type="button"
-              >
-                {line}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="mt-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -169,7 +165,11 @@ export const HomePage = () => {
           </div>
 
           <div className="mt-5 h-[60vh] w-full overflow-hidden rounded-[1.5rem] border border-white/10">
-            <BusMap onStopClick={handleStopClick} selectedRoute={selectedRoute} />
+            <BusMap
+              onStopClick={handleStopClick}
+              selectedRoute={selectedRoute}
+              userLocation={userLocation}
+            />
           </div>
         </div>
       </div>
