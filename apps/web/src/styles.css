@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #660033;
+  --color-primary-dark: #4d0026;
+  --color-accent: #ffaacc;
+
+  /* Estados de retraso de bus */
+  --color-delay-ok: #16a34a;      /* verde - bus a tiempo o adelantado */
+  --color-delay-warn: #ca8a04;    /* amarillo - retraso <= 5 minutos */
+  --color-delay-late: #dc2626;    /* rojo - retraso > 5 minutos */
+
+  /* Neutros del sistema */
+  --color-surface: #1a0a0f;       /* fondo oscuro con tono maroon */
+  --color-surface-alt: #2d1020;   /* fondo alternativo para cards */
+  --color-on-primary: #ffffff;    /* texto sobre fondo primary */
+}
+
 :root {
   color-scheme: dark;
   font-family: "Segoe UI", sans-serif;
