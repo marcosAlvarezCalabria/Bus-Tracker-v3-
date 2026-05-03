@@ -8,16 +8,19 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { healthRouter } from "./routes/health.route.js";
 import { createPublicRouter } from "./routes/public.route.js";
 import { ArrivalsService } from "./services/arrivals.service.js";
+import { StopsService } from "./services/stops.service.js";
 import { VehicleFeedService } from "./services/vehicle-feed.service.js";
 
 type AppDependencies = {
   arrivalsService?: ArrivalsService;
+  stopsService?: StopsService;
   vehicleFeedService?: VehicleFeedService;
 };
 
 export const createApp = (env: AppEnv, dependencies: AppDependencies = {}) => {
   const app = express();
   const arrivalsService = dependencies.arrivalsService ?? new ArrivalsService(env);
+  const stopsService = dependencies.stopsService ?? new StopsService(env);
   const vehicleFeedService = dependencies.vehicleFeedService ?? new VehicleFeedService(env);
 
   app.disable("x-powered-by");
@@ -39,7 +42,7 @@ export const createApp = (env: AppEnv, dependencies: AppDependencies = {}) => {
   app.use(express.json());
 
   app.use("/health", healthRouter);
-  app.use("/", createPublicRouter(vehicleFeedService, arrivalsService));
+  app.use("/", createPublicRouter(vehicleFeedService, arrivalsService, stopsService));
 
   app.use(errorHandler);
 

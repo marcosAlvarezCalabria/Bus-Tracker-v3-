@@ -20,7 +20,18 @@ export const arrivalSchema = z.object({
 
 export const arrivalListSchema = z.array(arrivalSchema);
 
+export const stopSchema = z.object({
+  stopId: z.string(),
+  stopName: z.string(),
+  lat: z.number(),
+  lon: z.number()
+});
+
+export const stopListSchema = z.array(stopSchema);
+
 export type Vehicle = z.infer<typeof vehicleSchema>;
 export type VehicleList = z.infer<typeof vehicleListSchema>;
 export type Arrival = z.infer<typeof arrivalSchema>;
 export type ArrivalList = z.infer<typeof arrivalListSchema>;
+export type Stop = z.infer<typeof stopSchema>;
+export type StopList = z.infer<typeof stopListSchema>;
