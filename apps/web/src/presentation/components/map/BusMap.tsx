@@ -68,7 +68,8 @@ const createBusesCollection = (
 ): FeatureCollection<Point, BusFeatureProperties> => ({
   type: "FeatureCollection",
   features: vehicles.map<Feature<Point, BusFeatureProperties>>((vehicle) => {
-    const coordinates = coordinatesByVehicleId?.get(vehicle.vehicleId) ?? [vehicle.lng, vehicle.lat];
+    const vehicleId = resolveVehicleId(vehicle);
+    const coordinates = coordinatesByVehicleId?.get(vehicleId) ?? [vehicle.lng, vehicle.lat];
 
     return {
       type: "Feature",
@@ -78,11 +79,14 @@ const createBusesCollection = (
       },
       properties: {
         routeShortName: vehicle.routeShortName,
-        vehicleId: vehicle.vehicleId
+        vehicleId
       }
     };
   })
 });
+
+const resolveVehicleId = (bus: BusPosition): string =>
+  bus.vehicleId ?? bus.id ?? `${bus.lat}-${bus.lng}`;
 
 export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -252,11 +256,13 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
       const nextPositions = new Map<string, [number, number]>();
 
       for (const vehicle of vehicles) {
-        nextPositions.set(vehicle.vehicleId, [vehicle.lng, vehicle.lat]);
+        nextPositions.set(resolveVehicleId(vehicle), [vehicle.lng, vehicle.lat]);
       }
 
       const previousPositions = previousPositionsRef.current;
-      const shouldAnimate = vehicles.some((vehicle) => previousPositions.has(vehicle.vehicleId));
+      const shouldAnimate = vehicles.some((vehicle) =>
+        previousPositions.has(resolveVehicleId(vehicle))
+      );
 
       if (!shouldAnimate) {
         source.setData(createBusesCollection(vehicles, nextPositions));
@@ -272,17 +278,18 @@ export const BusMap = ({ selectedRoute, onStopClick }: BusMapProps) => {
         const interpolatedPositions = new Map<string, [number, number]>();
 
         for (const vehicle of vehicles) {
-          const previous = startPositions.get(vehicle.vehicleId);
+          const vehicleId = resolveVehicleId(vehicle);
+          const previous = startPositions.get(vehicleId);
 
           if (!previous) {
-            interpolatedPositions.set(vehicle.vehicleId, [vehicle.lng, vehicle.lat]);
+            interpolatedPositions.set(vehicleId, [vehicle.lng, vehicle.lat]);
             continue;
           }
 
           const interpolatedLng = previous[0] + (vehicle.lng - previous[0]) * progress;
           const interpolatedLat = previous[1] + (vehicle.lat - previous[1]) * progress;
 
-          interpolatedPositions.set(vehicle.vehicleId, [interpolatedLng, interpolatedLat]);
+          interpolatedPositions.set(vehicleId, [interpolatedLng, interpolatedLat]);
         }
 
         source.setData(createBusesCollection(vehicles, interpolatedPositions));
