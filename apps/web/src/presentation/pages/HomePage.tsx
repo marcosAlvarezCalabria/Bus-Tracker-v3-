@@ -154,6 +154,10 @@ export const HomePage = () => {
                   }
                   key={`map-${line}`}
                   onClick={() => {
+                    console.log("[HomePage] Route button clicked", {
+                      route,
+                      nextSelectedRoute: route
+                    });
                     setSelectedRoute(route);
                   }}
                   type="button"
