@@ -1,6 +1,6 @@
 {
-  "name": "Ireland Bus Tracking — Galway",
-  "short_name": "GalwayBus",
+  "name": "Bus Tracker Galway",
+  "short_name": "Bus Tracker",
   "description": "Real-time bus tracking and delay prediction for Galway, Ireland",
   "theme_color": "#660033",
   "background_color": "#660033",
