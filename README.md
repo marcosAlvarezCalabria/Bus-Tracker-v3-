@@ -1,34 +1,70 @@
 # Ireland Bus Tracking
 
-Monorepo scaffold with:
+Proyecto experimental para seguir buses de Galway con:
 
-- `apps/api`: Express + TypeScript backend
-- `apps/web`: React + Vite + TypeScript frontend
-- `packages/shared`: shared Zod schemas
+- `apps/api`: backend Express + TypeScript
+- `apps/web`: frontend React + Vite + Tailwind 4
+- `packages/shared`: schemas y tipos compartidos
 
-## Quick start
+## Estado actual
 
-1. Copy `apps/api/.env.example` to `apps/api/.env`
-2. Install dependencies with `npm install`
-3. Run the API with `npm run dev --workspace @bus-tracker/api`
-4. Run the web app with `npm run dev --workspace @bus-tracker/web`
+El proyecto queda pausado en este punto.
 
-The API refuses to start if any required environment variable is missing or invalid.
+Lo que sí está hecho:
 
-## CI/CD
+- frontend con mapa en la home
+- selección de líneas de Galway
+- render de buses por ruta
+- geolocalización del usuario
+- base de endpoint `/stops` en backend
+- despliegue de API y web con GitHub Actions
 
-Pushes to `main` trigger the GitHub Actions deploy workflow.
+## Limitación principal
 
-The workflow does the following:
+La limitación real ahora mismo no es la UI, sino la frecuencia y calidad de los datos de vehículos.
 
-1. Installs dependencies with `npm ci`
-2. Runs API tests with `npm test --workspace=apps/api`
-3. Builds the API with `npm run build --workspace=apps/api`
-4. Deploys the API to the VPS over SSH and restarts `ireland-bus-api` with `pm2`
-5. Builds the frontend with `npm run build --workspace=apps/web`
-6. Deploys the frontend to Cloudflare Pages
+El mapa funciona, pero el feed no actualiza las posiciones con la frecuencia necesaria para que esto tenga sentido como tracker en tiempo real. En pruebas, los buses pueden mantener exactamente la misma posición durante muchos segundos, así que visualmente no se comporta como un rastreador útil.
 
-Required GitHub Actions secrets:
+Mientras el origen de datos no entregue posiciones bastante más frecuentes y fiables, el proyecto no aporta suficiente valor para seguir iterándolo.
+
+## Qué se deja hecho
+
+- estructura monorepo funcional
+- API en TypeScript
+- frontend desplegable en Cloudflare Pages
+- workflow de deploy desde GitHub Actions
+- integración de `VITE_API_URL` para build de producción
+
+## Desarrollo local
+
+1. Copiar `apps/api/.env.example` a `apps/api/.env`
+2. Instalar dependencias con `npm install`
+3. Levantar la API:
+
+```bash
+npm run dev --workspace @bus-tracker/api
+```
+
+4. Levantar la web:
+
+```bash
+npm run dev --workspace @bus-tracker/web
+```
+
+## Deploy
+
+Los pushes a `main` disparan el workflow de GitHub Actions.
+
+El flujo actual:
+
+1. instala dependencias
+2. ejecuta tests de API
+3. build de API
+4. deploy de API al VPS por SSH
+5. build de web
+6. deploy de web a Cloudflare Pages
+
+Secrets necesarios en GitHub Actions:
 
 - `VPS_HOST`
 - `VPS_USER`
@@ -36,4 +72,6 @@ Required GitHub Actions secrets:
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-Remote repository name: `Bus-Tracker-v3-`.
+## Nota final
+
+El repositorio se queda en GitHub como referencia del trabajo hecho hasta ahora. Si en el futuro aparece una fuente de posiciones de buses con actualizaciones realmente frecuentes, se podría retomar desde esta base.
